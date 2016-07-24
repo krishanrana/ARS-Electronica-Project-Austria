@@ -1,3 +1,12 @@
+//This is the Arduino code required to control the Linzer Schnitters using RDS commands.
+//The default commands which can be sent are 'ON' and 'OFF'
+//To control a LinzerSchnitter using the serial interface:
+//1. Type a command which will specify which LS unit you would like to control; the syntax for this is as follow:
+// >1;    this command will activate the LS with ID 0001
+//2. Send an uppercase 'I' to turn on the output or an uppercase 'O' to turn off the output
+
+
+
 #include <Wire.h>
 #include <Adafruit_Si4713.h>
 
