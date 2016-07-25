@@ -1,10 +1,13 @@
-//This is the Arduino code required to control the Linzer Schnitters using RDS commands.
+//2016 ARS Electronica Festival - On The Line Project
+
+//This is the Arduino code required to control the Linzer Schnitters using RDS commands over the I2C protocol.
 //The default commands which can be sent are 'ON' and 'OFF'
 //To control a LinzerSchnitter using the serial interface:
 //1. Type a command which will specify which LS unit you would like to control; the syntax for this is as follow:
 // >1;    this command will activate the LS with ID 0001
 //2. Send an uppercase 'I' to turn on the output or an uppercase 'O' to turn off the output
 
+//LinzerSchnitteID 65535 will control all of the connected LS units simultaneously
 
 
 #include <Wire.h>
@@ -62,7 +65,7 @@ void setup() {
 
 void loop() {
 
-  while (Serial.available()) {
+  while (Serial.available()==0);
     //read the most recent byte
     byteRead = Serial.read();
 
@@ -80,7 +83,6 @@ void loop() {
       Serial.println("Turning OFF");
     }
 
-
     if (byteRead > 47 && byteRead < 58 && StartSerial == true) {
       //number found
       ID = (ID * 10) + (byteRead - 48);
@@ -94,14 +96,12 @@ void loop() {
       ID = 0;
       StartSerial = false;
     }
-  }
-
+  
   if (PowerStatus == true) {
 
     setLinzerSchnitteRDS(0x03, LinzerSchnitteID, 0x0000 ); //turns output on
 
   }
-
 
   if (PowerStatus == false) {
 
