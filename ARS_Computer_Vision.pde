@@ -1,88 +1,96 @@
-import processing.video.*;
 import gab.opencv.*;
+import processing.video.*;
 import blobDetection.*;
+import processing.serial.*;
 
-OpenCV opencv;
+
+Serial myPort;
 Movie video;
 BlobDetection theBlobDetection;
+OpenCV opencv;
 
+PImage threshold;
+int capturewidth = 1920/3;
+int captureheight = 1080/3;
+float centroidx, centroidy;
+
+void settings() {
+
+  size(capturewidth*2, captureheight);
+}
 
 
 void setup() {
 
-  size(720, 480);
+  String portName = Serial.list()[4];
+  println(portName);
+  myPort = new Serial(this, portName, 9600);
   video = new Movie(this, "blobtest.mov");
-  opencv = new OpenCV(this, 720, 480);
-
-  opencv.startBackgroundSubtraction(5, 3, 0.5);
-
-  video.loop();
+  opencv = new OpenCV(this, 1920, 1080);
+  threshold = createImage(1920/3, 1080/3, ARGB);
   video.play();
-}
+  video.loop();
 
+  delay(100);
+  text("Threshold Image", capturewidth+50, 10);
+  
+}
 
 void draw() {
 
-  image(video, 0, 0);
+  image(video, 0, 0, capturewidth, captureheight); //resizes output video
   opencv.loadImage(video);
-  opencv.updateBackground();
-
-  opencv.dilate();
+  opencv.threshold(90);
   opencv.erode();
+  opencv.dilate();
+  threshold = opencv.getOutput();
+  image(threshold, capturewidth, 0, capturewidth, captureheight);
 
   noFill();
-  stroke(255, 0, 0);
-  strokeWeight(3);
-  for (Contour contour : opencv.findContours()) {
-    contour.draw();
-  }
+  theBlobDetection = new BlobDetection(threshold.width, threshold.height);
+  theBlobDetection.setPosDiscrimination(false);
+  theBlobDetection.setThreshold(0.2f);
+  theBlobDetection.computeBlobs(threshold.pixels);
+  drawBlobs(true);
 }
 
 
-  void movieEvent(Movie m) {
-
-    m.read();
-  }
-  
-  void drawBlobsAndEdges(boolean drawBlobs, boolean drawEdges)
+void drawBlobs(boolean drawBlobs)
 {
+
   noFill();
   Blob b;
-  EdgeVertex eA,eB;
-  for (int n=0 ; n<theBlobDetection.getBlobNb() ; n++)
+
+  for (int n=0; n<theBlobDetection.getBlobNb(); n++)
   {
     b=theBlobDetection.getBlob(n);
     if (b!=null)
     {
-      // Edges
-      if (drawEdges)
-      {
-        strokeWeight(3);
-        stroke(0,255,0);
-        for (int m=0;m<b.getEdgeNb();m++)
-        {
-          eA = b.getEdgeVertexA(m);
-          eB = b.getEdgeVertexB(m);
-          if (eA !=null && eB !=null)
-            line(
-              eA.x*width, eA.y*height, 
-              eB.x*width, eB.y*height
-              );
-        }
-      }
 
       // Blobs
       if (drawBlobs)
       {
-        strokeWeight(1);
-        stroke(255,0,0);
-        rect(
-          b.xMin*width,b.yMin*height,
-          b.w*width,b.h*height
-          );
-      }
+        if ((b.w*capturewidth * b.h*captureheight)>80)
+        {
 
+          centroidx = ((b.xMin*capturewidth)+(b.w*capturewidth*0.5));
+          centroidy = ((b.yMin*captureheight)+(b.h*captureheight*0.5));
+
+          strokeWeight(1);
+          stroke(255, 0, 0);
+          rect(
+            b.xMin*capturewidth + capturewidth, b.yMin*captureheight, 
+            b.w*capturewidth, b.h*captureheight
+            );
+
+          stroke(0, 255, 0);
+          ellipse(centroidx + capturewidth, centroidy, 10, 10);
+        }
+      }
     }
+  }
+}
 
-      }
+void movieEvent(Movie m) {
+  m.read();
 }
